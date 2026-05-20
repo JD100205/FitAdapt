@@ -6,3 +6,5 @@ services:
       MYSQL_DATABASE: fitadapt_db
     ports:
       - "3307:3306"
+    volumes:
+      - ./fitadapt.sql:/docker-entrypoint-initdb.d/fitadapt.sql
