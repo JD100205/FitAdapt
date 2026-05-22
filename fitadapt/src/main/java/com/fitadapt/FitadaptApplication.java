@@ -8,6 +8,6 @@ public class FitadaptApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(FitadaptApplication.class, args);
+        System.out.println("XD");
 	}
-
 }
