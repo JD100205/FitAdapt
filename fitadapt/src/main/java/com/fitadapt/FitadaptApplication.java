@@ -10,5 +10,4 @@ public class FitadaptApplication {
 		SpringApplication.run(FitadaptApplication.class, args);
         System.out.println("XD");
 	}
-
 }

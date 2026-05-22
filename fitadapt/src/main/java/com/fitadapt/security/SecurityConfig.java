@@ -38,24 +38,18 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable) // Deshabilitado por ser API Stateless
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // 1. Rutas Públicas (Autenticación y Registro)
                         .requestMatchers("/api/auth/**").permitAll()
 
-                        // 2. Rutas del Administrador (Gestión del catálogo maestro de ejercicios)
                         .requestMatchers("/api/admin/**").hasRole(AppRole.ADMINISTRADOR.name())
                         .requestMatchers(HttpMethod.POST, "/api/ejercicios/**").hasRole(AppRole.ADMINISTRADOR.name())
 
-                        // 3. Rutas del Profesional (Camino Guiado: Creación de PLANES)
                         .requestMatchers("/api/planes/**").hasRole(AppRole.PROFESIONAL.name())
 
-                        // 4. Rutas del Usuario (Camino Automático e Historial/Gamificación)
                         .requestMatchers("/api/rutinas/automatica/**").hasRole(AppRole.USUARIO.name())
                         .requestMatchers("/api/historial/**").hasRole(AppRole.USUARIO.name())
-
-                        // Cualquier otra petición requiere estar autenticado
                         .anyRequest().authenticated()
                 )
-                // Añadimos nuestro filtro JWT antes del filtro de autenticación nativo
+
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
