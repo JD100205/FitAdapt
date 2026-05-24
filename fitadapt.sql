@@ -181,171 +181,78 @@ CREATE TABLE EJERCICIO_CATEGORIA (
 );
 
 -- =========================================
--- DATOS INICIALES
+-- TABLA PERFIL_FISICO
+-- Relación 1:1 con USUARIO
 -- =========================================
 
--- ROLES
-INSERT INTO ROL (nombreRol)
-VALUES
-('ADMINISTRADOR'),
-('USUARIO'),
-('PROFESIONAL');
+CREATE TABLE PERFIL_FISICO (
+    idPerfilFisico INT PRIMARY KEY AUTO_INCREMENT,
 
--- CARGOS
-INSERT INTO CARGO (nombreCargo)
-VALUES
-('Fisioterapeuta'),
-('Entrenador'),
-('Nutricionista');
+    idUsuario INT NOT NULL UNIQUE,
 
--- CATEGORÍAS
-INSERT INTO CATEGORIA (nombreCategoria)
-VALUES
-('Cardio'),
-('Fuerza'),
-('Rehabilitación'),
-('Movilidad');
+    edad INT,
+    peso DECIMAL(5,2),
+    altura DECIMAL(5,2),
 
--- ver todas las tablas --
-SELECT * FROM ROL;
-SELECT * FROM USUARIO;
-SELECT * FROM CARGO;
-SELECT * FROM PROFESIONAL;
-SELECT * FROM PLAN_ENTRENAMIENTO;
-SELECT * FROM RUTINA;
-SELECT * FROM EJERCICIO;
-SELECT * FROM DETALLERUTINA;
-SELECT * FROM HISTORIAL;
-SELECT * FROM CATEGORIA;
-SELECT * FROM EJERCICIO_CATEGORIA;
+    nivel_experiencia VARCHAR(50),
+    objetivo VARCHAR(100),
 
--- usuario --
-INSERT INTO USUARIO
-(nombre, email, contrasenia, estado, puntos_totales, idRol)
-VALUES
-('Diogo Guerrero', 'diogo@gmail.com', '123456', 'Activo', 150, 2);
+    CONSTRAINT FK_PERFIL_USUARIO
+        FOREIGN KEY (idUsuario)
+        REFERENCES USUARIO(idUsuario)
+);
 
--- profesional --
-INSERT INTO PROFESIONAL
-(nombre, especialidad, estado, idCargo)
-VALUES
-('Carlos Pérez', 'Rehabilitación Física', 'Activo', 1);
+-- =========================================
+-- TABLA ZONA_CUERPO
+-- Catálogo maestro de lesiones/zonas
+-- =========================================
 
--- plan --
-INSERT INTO PLAN_ENTRENAMIENTO
-(fechaCreacion, objetivo, idProfesional, idUsuario)
-VALUES
-(NOW(), 'Mejorar movilidad y resistencia', 1, 1);
+CREATE TABLE ZONA_CUERPO (
+    idZona INT PRIMARY KEY AUTO_INCREMENT,
 
--- rutina --
-INSERT INTO RUTINA
-(fecha, idUsuario, idPlan)
-VALUES
-(NOW(), 1, 1);
+    nombreZona VARCHAR(100) NOT NULL UNIQUE
+);
 
--- ejercicio --
-INSERT INTO EJERCICIO
-(nombre, descripcion, nivel, tipo, duracion, calorias_base)
-VALUES
-('Sentadillas', 'Ejercicio de fuerza para piernas', 'Intermedio', 'Fuerza', 15, 50);
+-- =========================================
+-- TABLA USUARIO_LESION
+-- Relación N:M entre usuario y zona corporal
+-- =========================================
 
--- Relación ejercicio-categoría --
-INSERT INTO EJERCICIO_CATEGORIA
-(idEjercicio, idCategoria)
-VALUES
-(1, 2);
+CREATE TABLE USUARIO_LESION (
+    idLesion INT PRIMARY KEY AUTO_INCREMENT,
 
--- detalle rutina --
-INSERT INTO DETALLERUTINA
-(idRutina, idEjercicio, repeticiones, tiempo, intensidad)
-VALUES
-(1, 1, 20, 15, 'Media');
+    idUsuario INT NOT NULL,
+    idZona INT NOT NULL,
 
--- historial --
-INSERT INTO HISTORIAL
-(idUsuario, idEjercicio, fecha, resultado, notas, tiempo_real, puntos_obtenidos)
-VALUES
-(1, 1, NOW(), 'Completado', 'Buen rendimiento', 14, 100);
+    estado_recuperacion VARCHAR(50),
 
--- ver usuarios con roles --
-SELECT 
-    U.idUsuario,
-    U.nombre,
-    U.email,
-    R.nombreRol
-FROM USUARIO U
-INNER JOIN ROL R
-ON U.idRol = R.idRol;
+    CONSTRAINT FK_LESION_USUARIO
+        FOREIGN KEY (idUsuario)
+        REFERENCES USUARIO(idUsuario),
 
--- ver ejercicios con categoria --
-SELECT
-    E.nombre AS Ejercicio,
-    C.nombreCategoria AS Categoria,
-    E.duracion,
-    E.calorias_base
-FROM EJERCICIO E
-INNER JOIN EJERCICIO_CATEGORIA EC
-    ON E.idEjercicio = EC.idEjercicio
-INNER JOIN CATEGORIA C
-    ON EC.idCategoria = C.idCategoria;
+    CONSTRAINT FK_LESION_ZONA
+        FOREIGN KEY (idZona)
+        REFERENCES ZONA_CUERPO(idZona)
+);
 
--- ver planes con usuario y profesional --
-SELECT
-    P.idPlan,
-    U.nombre AS Usuario,
-    PR.nombre AS Profesional,
-    P.objetivo,
-    P.fechaCreacion
-FROM PLAN_ENTRENAMIENTO P
-INNER JOIN USUARIO U
-    ON P.idUsuario = U.idUsuario
-INNER JOIN PROFESIONAL PR
-    ON P.idProfesional = PR.idProfesional;
+-- =========================================
+-- TABLA EJERCICIO_IMPACTO
+-- Relación N:M entre ejercicio y zona corporal
+-- =========================================
 
--- ver historial completo --
-SELECT
-    H.idHistorial,
-    U.nombre AS Usuario,
-    E.nombre AS Ejercicio,
-    H.fecha,
-    H.resultado,
-    H.tiempo_real,
-    H.puntos_obtenidos
-FROM HISTORIAL H
-INNER JOIN USUARIO U
-    ON H.idUsuario = U.idUsuario
-INNER JOIN EJERCICIO E
-    ON H.idEjercicio = E.idEjercicio;
+CREATE TABLE EJERCICIO_IMPACTO (
+    idImpacto INT PRIMARY KEY AUTO_INCREMENT,
 
--- ver rutina detallada -- 
-SELECT
-    R.idRutina,
-    U.nombre AS Usuario,
-    E.nombre AS Ejercicio,
-    D.repeticiones,
-    D.tiempo,
-    D.intensidad
-FROM DETALLERUTINA D
-INNER JOIN RUTINA R
-    ON D.idRutina = R.idRutina
-INNER JOIN EJERCICIO E
-    ON D.idEjercicio = E.idEjercicio
-INNER JOIN USUARIO U
-    ON R.idUsuario = U.idUsuario;
+    idEjercicio INT NOT NULL,
+    idZona INT NOT NULL,
 
--- consulta para verificar puntos acumulados --
-SELECT
-    nombre,
-    puntos_totales
-FROM USUARIO;
+    nivel_impacto VARCHAR(50),
 
--- ver todas las fk detalladas (Adaptado a MySQL 8) --
-SELECT 
-    CONSTRAINT_NAME AS ForeignKey, 
-    TABLE_NAME AS TablaPadre, 
-    REFERENCED_TABLE_NAME AS TablaReferenciada 
-FROM 
-    INFORMATION_SCHEMA.KEY_COLUMN_USAGE 
-WHERE 
-    TABLE_SCHEMA = 'fitadapt_db' 
-    AND REFERENCED_TABLE_NAME IS NOT NULL;
+    CONSTRAINT FK_IMPACTO_EJERCICIO
+        FOREIGN KEY (idEjercicio)
+        REFERENCES EJERCICIO(idEjercicio),
+
+    CONSTRAINT FK_IMPACTO_ZONA
+        FOREIGN KEY (idZona)
+        REFERENCES ZONA_CUERPO(idZona)
+);
