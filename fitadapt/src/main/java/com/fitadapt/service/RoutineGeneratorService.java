@@ -115,7 +115,7 @@ public class RoutineGeneratorService {
                 repeticiones = 15;
                 intensidad = "Media";
                 break;
-            default: // Novato
+            default:
                 repeticiones = 10;
                 intensidad = "Baja";
                 break;
