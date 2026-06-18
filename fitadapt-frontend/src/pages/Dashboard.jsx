@@ -1,112 +1,173 @@
-import { Link, useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
-import axios from 'axios';
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Clock } from 'lucide-react';
+import api from '../api/client';
+import Sidebar from '../components/Sidebar';
+import ExerciseCard from '../components/ExerciseCard';
+
+// El login de prueba simula a "maria@test.com", que en los datos
+// semilla (INSERTS_FITADAPT.sql) corresponde a Maria Lopez, idUsuario 2.
+// (El código anterior usaba idUsuario 1, que en realidad es Juan Pérez;
+// lo corrijo aquí para que la rutina generada coincida con la persona
+// que inició sesión.)
+const ID_USUARIO = localStorage.getItem('fitadapt_userId');
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const [estadoBackend, setEstadoBackend] = useState("");
-  const [token, setToken] = useState("");
-  
-  // Estados para la gamificación
+  const [token] = useState(() => localStorage.getItem('fitadapt_jwt') || '');
+
   const [puntosTotales, setPuntosTotales] = useState(350); // Valor inicial
-  const [tiempoReal, setTiempoReal] = useState('');
-  const [mensajeResultado, setMensajeResultado] = useState('');
-  const [cargando, setCargando] = useState(false);
+
+  const [rutina, setRutina] = useState(null);
+  const [cargandoRutina, setCargandoRutina] = useState(true);
+  const [errorRutina, setErrorRutina] = useState('');
+
+  const [expandidoId, setExpandidoId] = useState(null);
+  const [resultados, setResultados] = useState({}); // { [idEjercicio]: { tipo, mensaje } }
+  const [enviandoId, setEnviandoId] = useState(null);
+
+  // Evita que React StrictMode (que en desarrollo ejecuta los efectos
+  // dos veces) dispare dos POST y genere dos rutinas duplicadas.
+  const yaGeneradaRef = useRef(false);
 
   useEffect(() => {
-    const jwt = localStorage.getItem('fitadapt_jwt');
-    if (!jwt) {
+    if (!token) {
       navigate('/');
-      return;
     }
-    setToken(jwt);
-  }, [navigate]);
+  }, [token, navigate]);
 
-  const enviarEjercicio = () => {
-    if (!tiempoReal || tiempoReal <= 0) {
-      alert("Ingresa un tiempo válido");
-      return;
-    }
+  useEffect(() => {
+    if (!token || yaGeneradaRef.current) return;
+    yaGeneradaRef.current = true;
 
-    setCargando(true);
-    setMensajeResultado("Evaluando esfuerzo...");
+    api.post(`/api/rutinas/generar/${ID_USUARIO}`, null, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((respuesta) => {
+        setRutina(respuesta.data);
+      })
+      .catch((error) => {
+        console.error(error);
+        setErrorRutina(
+          'No pudimos generar tu rutina. Verifica que el backend esté corriendo y que el usuario tenga un perfil físico registrado.'
+        );
+      })
+      .finally(() => setCargandoRutina(false));
+  }, [token]);
 
-    // Llamamos al endpoint que construimos en el Paso 2
-    axios.post('http://localhost:8080/api/v1/historial/registrar', {
-      idUsuario: 1, // María Fernández
-      idEjercicio: 1, // Sentadillas (15 min estimados)
-      tiempoReal: parseInt(tiempoReal)
+  const toggleExpandido = (idEjercicio) => {
+    setExpandidoId((actual) => (actual === idEjercicio ? null : idEjercicio));
+  };
+
+  // Se dispara cuando el usuario pulsa "Finalizar" en el cronómetro
+  // de un ejercicio puntual dentro de la rutina.
+  const registrarEjercicio = (ejercicio, segundosTotales) => {
+    const minutosReales = Math.round(segundosTotales / 60);
+
+    setEnviandoId(ejercicio.idEjercicio);
+
+    api.post('/api/v1/historial/registrar', {
+      idUsuario: ID_USUARIO,
+      idEjercicio: ejercicio.idEjercicio,
+      tiempoReal: minutosReales,
     }, {
-      headers: { 'Authorization': `Bearer ${token}` }
+      headers: { Authorization: `Bearer ${token}` },
     })
-    .then(respuesta => {
-      // Si el backend procesa bien, actualizamos la pantalla con el JSON que nos devuelve
-      setMensajeResultado(`Resultado: ${respuesta.data.estado} (+${respuesta.data.puntosObtenidos} pts)`);
-      setPuntosTotales(respuesta.data.puntosTotalesNuevos);
-      setCargando(false);
-      setTiempoReal(''); // Limpiamos el input
-    })
-    .catch(error => {
-      console.error(error);
-      setMensajeResultado("Hubo un error al registrar el ejercicio.");
-      setCargando(false);
-    });
+      .then((respuesta) => {
+        const { estado, puntosObtenidos, puntosTotalesNuevos } = respuesta.data;
+        const estadoNormalizado = estado.toLowerCase();
+        const tipo = estadoNormalizado.includes('insuficiente')
+          ? 'error'
+          : estadoNormalizado.includes('advertencia')
+            ? 'advertencia'
+            : 'exito';
+
+        setResultados((actuales) => ({
+          ...actuales,
+          [ejercicio.idEjercicio]: { tipo, mensaje: `${estado} · +${puntosObtenidos} pts` },
+        }));
+        setPuntosTotales(puntosTotalesNuevos);
+      })
+      .catch((error) => {
+        console.error(error);
+        setResultados((actuales) => ({
+          ...actuales,
+          [ejercicio.idEjercicio]: { tipo: 'error', mensaje: 'Hubo un error al registrar el ejercicio.' },
+        }));
+      })
+      .finally(() => setEnviandoId(null));
   };
 
   const cerrarSesion = () => {
     localStorage.removeItem('fitadapt_jwt');
   };
 
+  const ejercicios = rutina?.ejercicios ?? [];
+  const completados = ejercicios.filter((ej) => resultados[ej.idEjercicio]).length;
+  const totalMinutos = ejercicios.reduce((acc, ej) => acc + (ej.tiempoEstimadoMinutos || 0), 0);
+  const progresoPorcentaje = ejercicios.length ? (completados / ejercicios.length) * 100 : 0;
+  const todoCompletado = ejercicios.length > 0 && completados === ejercicios.length;
+
   return (
-    <div style={{ padding: '20px', maxWidth: '600px', margin: '0 auto' }}>
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #ccc', paddingBottom: '10px' }}>
-        <h1>Panel FITADAPT</h1>
-        <h2 style={{ color: '#007BFF' }}>🏆 {puntosTotales} pts</h2>
-      </header>
+    <div className="app-layout">
+      <Sidebar onCerrarSesion={cerrarSesion} />
 
-      <main style={{ marginTop: '30px' }}>
-        <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '10px', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
-          <h3 style={{ marginTop: '0' }}>Rutina Activa: Sentadillas</h3>
-          <p><strong>Nivel:</strong> Novato | <strong>Impacto:</strong> Alto en Rodilla</p>
-          <p><strong>Tiempo Estimado:</strong> 15 minutos</p>
-          
-          <hr style={{ margin: '20px 0', border: '1px solid #eee' }} />
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            <label htmlFor="tiempo">¿En cuánto tiempo real lo terminaste? (minutos):</label>
-            <input 
-              id="tiempo"
-              type="number" 
-              value={tiempoReal} 
-              onChange={(e) => setTiempoReal(e.target.value)}
-              placeholder="Ej. 15"
-              style={{ padding: '10px', fontSize: '16px', borderRadius: '5px', border: '1px solid #ccc' }}
-            />
-            
-            <button 
-              onClick={enviarEjercicio}
-              disabled={cargando}
-              style={{ padding: '12px', fontSize: '16px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold', marginTop: '10px' }}
-            >
-              {cargando ? 'Procesando...' : 'Completar Ejercicio'}
-            </button>
+      <div className="main-area">
+        <header className="routine-header">
+          <div className="routine-header-top">
+            <h1>Rutina de hoy</h1>
+            <span className="points-pill">🏆 {puntosTotales} pts</span>
           </div>
 
-          {mensajeResultado && (
-            <div style={{ marginTop: '20px', padding: '15px', backgroundColor: mensajeResultado.includes('advertencia') || mensajeResultado.includes('insuficiente') ? '#fff3cd' : '#d4edda', borderRadius: '5px', fontWeight: 'bold' }}>
-              {mensajeResultado}
-            </div>
-          )}
-        </div>
-      </main>
+          {!cargandoRutina && !errorRutina && (
+            <>
+              <p className="routine-meta">
+                <Clock size={16} />
+                {totalMinutos} minutos · {ejercicios.length} ejercicios
+              </p>
 
-      <footer style={{ marginTop: '40px', textAlign: 'center' }}>
-        <Link to="/" onClick={cerrarSesion}>
-          <button style={{ padding: '8px 15px', cursor: 'pointer', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '5px' }}>
-            Cerrar Sesión
-          </button>
-        </Link>
-      </footer>
+              <div className="routine-progress">
+                <div className="routine-progress-labels">
+                  <span>Progreso</span>
+                  <span>{completados}/{ejercicios.length} completados</span>
+                </div>
+                <div className="progress-track">
+                  <div className="progress-fill" style={{ width: `${progresoPorcentaje}%` }} />
+                </div>
+              </div>
+            </>
+          )}
+        </header>
+
+        <main className="routine-content">
+          {cargandoRutina && <p className="status-text">Generando tu rutina…</p>}
+
+          {errorRutina && <div className="result-banner result-error">{errorRutina}</div>}
+
+          {!cargandoRutina && !errorRutina && (
+            <>
+              <div className="exercise-grid">
+                {ejercicios.map((ejercicio, indice) => (
+                  <ExerciseCard
+                    key={ejercicio.idEjercicio}
+                    ejercicio={ejercicio}
+                    numero={indice + 1}
+                    resultado={resultados[ejercicio.idEjercicio]}
+                    expandido={expandidoId === ejercicio.idEjercicio}
+                    enviando={enviandoId === ejercicio.idEjercicio}
+                    onToggle={() => toggleExpandido(ejercicio.idEjercicio)}
+                    onFinalizar={(segundos) => registrarEjercicio(ejercicio, segundos)}
+                  />
+                ))}
+              </div>
+
+              <div className={`routine-cta ${todoCompletado ? 'is-done' : ''}`}>
+                {todoCompletado ? '¡Rutina completada! 🎉' : 'Completa todos los ejercicios'}
+              </div>
+            </>
+          )}
+        </main>
+      </div>
     </div>
   );
 }
