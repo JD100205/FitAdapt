@@ -33,4 +33,13 @@ public class Usuario {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "idRol", nullable = false)
     private Rol rol;
+
+    @Column(name = "protectores_racha")
+    private Integer protectoresRacha = 0;
+
+    @Column(name = "racha_actual")
+    private Integer rachaActual = 0;
+
+    @Column(name = "ultima_fecha_entrenamiento")
+    private java.time.LocalDate ultimaFechaEntrenamiento;
 }

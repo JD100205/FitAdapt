@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "HISTORIAL")
@@ -24,8 +25,8 @@ public class Historial {
     @JoinColumn(name = "idEjercicio", nullable = false)
     private Ejercicio ejercicio;
 
-    @Column(name = "fecha")
-    private LocalDate fecha;
+    @Column(name = "fecha_hora")
+    private LocalDateTime fechaHora;
 
     @Column(name = "resultado", length = 255)
     private String resultado;

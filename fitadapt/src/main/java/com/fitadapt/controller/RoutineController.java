@@ -25,10 +25,12 @@ public class RoutineController {
         return ResponseEntity.ok(rutina);
     }
 
-    // TU ENDPOINT POST ORIGINAL (Intacto)
     @PostMapping("/generar/{idUsuario}")
-    public ResponseEntity<RoutineResponseDTO> generarRutina(@PathVariable Integer idUsuario) {
-        RoutineResponseDTO nuevaRutina = routineGeneratorService.generarRutinaAutomatica(idUsuario);
+    public ResponseEntity<RoutineResponseDTO> generarRutina(
+            @PathVariable Integer idUsuario,
+            @RequestParam(defaultValue = "Normal") String volumen) {
+
+        RoutineResponseDTO nuevaRutina = routineGeneratorService.generarRutinaAutomatica(idUsuario, volumen);
         return ResponseEntity.ok(nuevaRutina);
     }
 }
