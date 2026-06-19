@@ -77,10 +77,46 @@ public class HistorialService {
 
         historialRepository.save(historial);
 
+        LocalDate hoy = LocalDate.now();
+        LocalDate ultimaFecha = usuario.getUltimaFechaEntrenamiento();
+
+        int racha = usuario.getRachaActual() != null ? usuario.getRachaActual() : 0;
+        String mensajeRacha = "Ejercicio registrado.";
+
+        if (ultimaFecha == null) {
+            racha = 1;
+            mensajeRacha = "¡Primer día de entrenamiento! Racha iniciada";
+        } else if (!ultimaFecha.isEqual(hoy)) {
+            long diasPasados = java.time.temporal.ChronoUnit.DAYS.between(ultimaFecha, hoy);
+
+            if (diasPasados == 1) {
+                racha++;
+                mensajeRacha = "¡Racha aumentada!";
+            } else if (diasPasados > 1) {
+                long diasPerdidos = diasPasados - 1;
+                int protectores = usuario.getProtectoresRacha() != null ? usuario.getProtectoresRacha() : 0;
+
+                if (protectores >= diasPerdidos) {
+                    usuario.setProtectoresRacha((int) (protectores - diasPerdidos));
+                    racha++;
+                    mensajeRacha = "Faltaste " + diasPerdidos + " día(s), pero el Protector salvó tu racha";
+                } else {
+                    racha = 1;
+                    mensajeRacha = "Perdiste tu racha por inactividad. ¡Comienza de nuevo!";
+                }
+            }
+        } else {
+            mensajeRacha = "Racha de hoy ya asegurada. ¡Sigue así!";
+        }
+
+        usuario.setRachaActual(racha);
+        usuario.setUltimaFechaEntrenamiento(hoy);
+
         int puntosActuales = usuario.getPuntosTotales() != null ? usuario.getPuntosTotales() : 0;
         usuario.setPuntosTotales(puntosActuales + puntosCalculados);
+
         usuarioRepository.save(usuario);
 
-        return new HistorialResponseDTO(estado, puntosCalculados, usuario.getPuntosTotales());
+        return new HistorialResponseDTO(estado, puntosCalculados, usuario.getPuntosTotales(), racha, mensajeRacha);
     }
 }
