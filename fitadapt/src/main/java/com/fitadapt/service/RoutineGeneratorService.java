@@ -14,6 +14,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class RoutineGeneratorService {
@@ -78,6 +79,37 @@ public class RoutineGeneratorService {
         );
     }
 
+    public RoutineResponseDTO obtenerRutinaDeHoy(Integer idUsuario) {
+        Optional<Rutina> rutinaOpt = rutinaRepository.findFirstByUsuario_IdUsuarioAndFecha(idUsuario, LocalDate.now());
+
+        if (rutinaOpt.isEmpty()) {
+            return null;
+        }
+
+        Rutina rutina = rutinaOpt.get();
+
+        List<DetalleRutina> detalles = detalleRutinaRepository.findByRutina_IdRutina(rutina.getIdRutina());
+
+        String objetivo = perfilFisicoRepository.findByUsuario_IdUsuario(idUsuario)
+                .map(PerfilFisico::getObjetivo)
+                .orElse("General");
+
+        List<ExerciseDetailDTO> ejerciciosDto = detalles.stream().map(d -> new ExerciseDetailDTO(
+                d.getEjercicio().getIdEjercicio(),
+                d.getEjercicio().getNombre(),
+                d.getEjercicio().getDescripcion(),
+                d.getRepeticiones(),
+                d.getTiempo(),
+                d.getIntensidad()
+        )).toList();
+
+        return new RoutineResponseDTO(
+                rutina.getIdRutina(),
+                rutina.getFecha(),
+                objetivo,
+                ejerciciosDto
+        );
+    }
 
     private List<Ejercicio> ensamblarEjercicios(List<Ejercicio> fuerza, List<Ejercicio> cardio, String objetivo) {
         List<Ejercicio> seleccion = new ArrayList<>();
@@ -126,7 +158,7 @@ public class RoutineGeneratorService {
                 ej.getNombre(),
                 ej.getDescripcion(),
                 repeticiones,
-                ej.getDuracion(), // Usamos la duración base de la BD
+                ej.getDuracion(),
                 intensidad
         );
     }
