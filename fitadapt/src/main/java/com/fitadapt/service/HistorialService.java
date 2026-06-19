@@ -12,6 +12,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Service
 public class HistorialService {
@@ -35,6 +37,17 @@ public class HistorialService {
         Ejercicio ejercicio = ejercicioRepository.findById(request.idEjercicio())
                 .orElseThrow(() -> new RuntimeException("Ejercicio no encontrado"));
 
+        Optional<Historial> ultimoRegistro = historialRepository.findFirstByUsuario_IdUsuarioOrderByFechaHoraDesc(usuario.getIdUsuario());
+
+        if (ultimoRegistro.isPresent()) {
+            LocalDateTime tiempoUltimo = ultimoRegistro.get().getFechaHora();
+            long minutosTranscurridos = java.time.temporal.ChronoUnit.MINUTES.between(tiempoUltimo, LocalDateTime.now());
+
+            if (minutosTranscurridos < 2) { // 2 minutos de enfriamiento
+                throw new RuntimeException("Cooldown activo: Debes esperar 2 minutos antes de registrar otro ejercicio para evitar spam.");
+            }
+        }
+
         int tiempoEstimado = ejercicio.getDuracion();
         int tiempoReal = request.tiempoReal();
 
@@ -56,7 +69,7 @@ public class HistorialService {
         Historial historial = new Historial();
         historial.setUsuario(usuario);
         historial.setEjercicio(ejercicio);
-        historial.setFecha(LocalDate.now());
+        historial.setFechaHora(LocalDateTime.now());
         historial.setResultado(estado);
         historial.setNotas("Cumplimiento del margen de esfuerzo: " + String.format("%.2f", cumplimiento) + "%");
         historial.setTiempoReal(tiempoReal);
