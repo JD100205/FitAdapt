@@ -17,8 +17,12 @@ public class HistorialController {
     }
 
     @PostMapping("/registrar")
-    public ResponseEntity<HistorialResponseDTO> registrarEjercicio(@RequestBody HistorialRequestDTO request) {
-        HistorialResponseDTO response = historialService.registrarFinalizacion(request);
-        return ResponseEntity.ok(response);
+    public ResponseEntity<?> registrarEjercicio(@RequestBody HistorialRequestDTO request) {
+        try {
+            HistorialResponseDTO response = historialService.registrarFinalizacion(request);
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 }

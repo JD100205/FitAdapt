@@ -12,6 +12,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Service
 public class HistorialService {
@@ -35,6 +37,17 @@ public class HistorialService {
         Ejercicio ejercicio = ejercicioRepository.findById(request.idEjercicio())
                 .orElseThrow(() -> new RuntimeException("Ejercicio no encontrado"));
 
+        Optional<Historial> ultimoRegistro = historialRepository.findFirstByUsuario_IdUsuarioOrderByFechaHoraDesc(usuario.getIdUsuario());
+
+        if (ultimoRegistro.isPresent()) {
+            LocalDateTime tiempoUltimo = ultimoRegistro.get().getFechaHora();
+            long minutosTranscurridos = java.time.temporal.ChronoUnit.MINUTES.between(tiempoUltimo, LocalDateTime.now());
+
+            if (minutosTranscurridos < 2) { // 2 minutos de enfriamiento
+                throw new RuntimeException("Cooldown activo: Debes esperar 2 minutos antes de registrar otro ejercicio para evitar spam.");
+            }
+        }
+
         int tiempoEstimado = ejercicio.getDuracion();
         int tiempoReal = request.tiempoReal();
 
@@ -56,7 +69,7 @@ public class HistorialService {
         Historial historial = new Historial();
         historial.setUsuario(usuario);
         historial.setEjercicio(ejercicio);
-        historial.setFecha(LocalDate.now());
+        historial.setFechaHora(LocalDateTime.now());
         historial.setResultado(estado);
         historial.setNotas("Cumplimiento del margen de esfuerzo: " + String.format("%.2f", cumplimiento) + "%");
         historial.setTiempoReal(tiempoReal);
@@ -64,10 +77,46 @@ public class HistorialService {
 
         historialRepository.save(historial);
 
+        LocalDate hoy = LocalDate.now();
+        LocalDate ultimaFecha = usuario.getUltimaFechaEntrenamiento();
+
+        int racha = usuario.getRachaActual() != null ? usuario.getRachaActual() : 0;
+        String mensajeRacha = "Ejercicio registrado.";
+
+        if (ultimaFecha == null) {
+            racha = 1;
+            mensajeRacha = "¡Primer día de entrenamiento! Racha iniciada";
+        } else if (!ultimaFecha.isEqual(hoy)) {
+            long diasPasados = java.time.temporal.ChronoUnit.DAYS.between(ultimaFecha, hoy);
+
+            if (diasPasados == 1) {
+                racha++;
+                mensajeRacha = "¡Racha aumentada!";
+            } else if (diasPasados > 1) {
+                long diasPerdidos = diasPasados - 1;
+                int protectores = usuario.getProtectoresRacha() != null ? usuario.getProtectoresRacha() : 0;
+
+                if (protectores >= diasPerdidos) {
+                    usuario.setProtectoresRacha((int) (protectores - diasPerdidos));
+                    racha++;
+                    mensajeRacha = "Faltaste " + diasPerdidos + " día(s), pero el Protector salvó tu racha";
+                } else {
+                    racha = 1;
+                    mensajeRacha = "Perdiste tu racha por inactividad. ¡Comienza de nuevo!";
+                }
+            }
+        } else {
+            mensajeRacha = "Racha de hoy ya asegurada. ¡Sigue así!";
+        }
+
+        usuario.setRachaActual(racha);
+        usuario.setUltimaFechaEntrenamiento(hoy);
+
         int puntosActuales = usuario.getPuntosTotales() != null ? usuario.getPuntosTotales() : 0;
         usuario.setPuntosTotales(puntosActuales + puntosCalculados);
+
         usuarioRepository.save(usuario);
 
-        return new HistorialResponseDTO(estado, puntosCalculados, usuario.getPuntosTotales());
+        return new HistorialResponseDTO(estado, puntosCalculados, usuario.getPuntosTotales(), racha, mensajeRacha);
     }
 }

@@ -25,7 +25,6 @@ public class Historial {
     @JoinColumn(name = "idEjercicio", nullable = false)
     private Ejercicio ejercicio;
 
-    // Reemplaza el 'private LocalDate fecha;' por esto:
     @Column(name = "fecha_hora")
     private LocalDateTime fechaHora;
 

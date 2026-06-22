@@ -6,7 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/rutinas")
+@RequestMapping("/api/v1/rutinas")
 public class RoutineController {
 
     private final RoutineGeneratorService routineGeneratorService;
@@ -15,9 +15,22 @@ public class RoutineController {
         this.routineGeneratorService = routineGeneratorService;
     }
 
+    @GetMapping("/hoy/{idUsuario}")
+    public ResponseEntity<RoutineResponseDTO> obtenerRutinaHoy(@PathVariable Integer idUsuario) {
+        RoutineResponseDTO rutina = routineGeneratorService.obtenerRutinaDeHoy(idUsuario);
+
+        if (rutina == null) {
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.ok(rutina);
+    }
+
     @PostMapping("/generar/{idUsuario}")
-    public ResponseEntity<RoutineResponseDTO> generarRutina(@PathVariable Integer idUsuario) {
-        RoutineResponseDTO nuevaRutina = routineGeneratorService.generarRutinaAutomatica(idUsuario);
+    public ResponseEntity<RoutineResponseDTO> generarRutina(
+            @PathVariable Integer idUsuario,
+            @RequestParam(defaultValue = "Normal") String volumen) {
+
+        RoutineResponseDTO nuevaRutina = routineGeneratorService.generarRutinaAutomatica(idUsuario, volumen);
         return ResponseEntity.ok(nuevaRutina);
     }
 }

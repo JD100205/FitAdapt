@@ -20,18 +20,6 @@ public class SecurityConfig {
         this.jwtFilter = jwtFilter;
     }
 
-    /*@Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        return http
-                .csrf(AbstractHttpConfigurer::disable)
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth
-                        .anyRequest().permitAll()
-                )
-                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
-                .build();
-    }*/
-
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
@@ -46,8 +34,10 @@ public class SecurityConfig {
 
                         .requestMatchers("/api/planes/**").hasRole(AppRole.PROFESIONAL.name())
 
-                        .requestMatchers("/api/rutinas/automatica/**").hasRole(AppRole.USUARIO.name())
-                        .requestMatchers("/api/historial/**").hasRole(AppRole.USUARIO.name())
+                        // Rutas actualizadas con v1 y el rol correcto
+                        .requestMatchers("/api/v1/rutinas/**").hasRole(AppRole.USUARIO.name())
+                        .requestMatchers("/api/v1/historial/**").hasRole(AppRole.USUARIO.name())
+
                         .anyRequest().authenticated()
                 )
 
