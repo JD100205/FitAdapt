@@ -3,18 +3,18 @@ import { useState } from 'react';
 
 // Los IDs deben coincidir con los registros de zonas del backend
 const ZONAS = [
-  { id: 1,  label: 'Hombro derecho',    emoji: '💪' },
-  { id: 2,  label: 'Hombro izquierdo',  emoji: '💪' },
-  { id: 3,  label: 'Codo derecho',      emoji: '🦾' },
-  { id: 4,  label: 'Codo izquierdo',    emoji: '🦾' },
-  { id: 5,  label: 'Muñeca derecha',    emoji: '✋' },
-  { id: 6,  label: 'Muñeca izquierda',  emoji: '✋' },
-  { id: 7,  label: 'Rodilla derecha',   emoji: '🦵' },
-  { id: 8,  label: 'Rodilla izquierda', emoji: '🦵' },
-  { id: 9,  label: 'Tobillo derecho',   emoji: '🦶' },
-  { id: 10, label: 'Tobillo izquierdo', emoji: '🦶' },
-  { id: 11, label: 'Zona lumbar',       emoji: '🔙' },
-  { id: 12, label: 'Zona cervical',     emoji: '🫀' },
+  { id: 1,  label: 'Rodilla', emoji: '🦵' },
+  { id: 2,  label: 'Espalda', emoji: '🏋️' },
+  { id: 3,  label: 'Hombro', emoji: '💪' },
+  { id: 4,  label: 'Cuello', emoji: '🫀' },
+  { id: 5,  label: 'Tobillo', emoji: '🦶' },
+  { id: 13, label: 'Codo', emoji: '🦾' },
+  { id: 14, label: 'Muñeca', emoji: '✋' },
+  { id: 15, label: 'Lumbar', emoji: '🔙' },
+  { id: 16, label: 'Cadera', emoji: '🦴' },
+  { id: 17, label: 'Pecho', emoji: '💓' },
+  { id: 18, label: 'Abdomen', emoji: '🫃' },
+  { id: 19, label: 'Gluteos', emoji: '🍑' }
 ];
 
 export default function StepLesiones({ onBack, onFinish }) {
