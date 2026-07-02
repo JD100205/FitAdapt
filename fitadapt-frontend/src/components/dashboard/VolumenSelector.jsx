@@ -3,10 +3,40 @@ import { useState } from 'react';
 import { VOLUMEN_OPTIONS } from '../../utils/constants';
 
 const VOLUMEN_META = {
-  Corta:   { emoji: '⚡', desc: '~20 min · Ideal para días con poco tiempo',    color: 'border-yellow-300 bg-yellow-50 dark:bg-yellow-900/20' },
-  Normal:  { emoji: '🏋️', desc: '~40 min · La sesión equilibrada recomendada', color: 'border-indigo-300 bg-indigo-50 dark:bg-indigo-900/20' },
-  Intensa: { emoji: '🔥', desc: '~60 min · Máximo desafío adaptativo',          color: 'border-red-300 bg-red-50 dark:bg-red-900/20'          },
+  Corta: {
+    desc:      'Sprinting · 20 min · Concentrado',
+    duracion:  '20',
+    color:     'yellow',
+    bars:      [true, false, false],
+  },
+  Normal: {
+    desc:      'Estándar · 40 min · Completo',
+    duracion:  '40',
+    color:     'yellow',
+    bars:      [true, true, false],
+  },
+  Intensa: {
+    desc:      'Overload · 60 min · Máxima exigencia',
+    duracion:  '60',
+    color:     'red',
+    bars:      [true, true, true],
+  },
 };
+
+function BarIndicator({ bars, color, active }) {
+  const activeColor  = color === 'red'    ? 'bg-red-500'    : 'bg-yellow-400';
+  const inactiveColor = active ? 'bg-neutral-700' : 'bg-[#1a1a1a]';
+  return (
+    <div className="flex gap-0.5">
+      {bars.map((filled, i) => (
+        <span
+          key={i}
+          className={`w-2 h-3 ${filled ? activeColor : inactiveColor}`}
+        />
+      ))}
+    </div>
+  );
+}
 
 export default function VolumenSelector({ onConfirm }) {
   const [seleccionado, setSeleccionado] = useState('Normal');
@@ -19,46 +49,71 @@ export default function VolumenSelector({ onConfirm }) {
   };
 
   return (
-    <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 space-y-5">
+    <div className="bg-[#111111] border border-[#1f1f1f] p-6 space-y-5">
       <div>
-        <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-          ¿Cómo quieres entrenar hoy?
+        <h2 className="text-base font-black text-white uppercase tracking-wider">
+          Selección de carga diaria
         </h2>
-        <p className="text-sm text-gray-500 mt-1">
-          El sistema ajustará los ejercicios a tu perfil y nivel de experiencia.
+        <p className="text-[10px] text-neutral-500 uppercase tracking-widest mt-1">
+          Establece la dosificación de volumen para la sesión de hoy
         </p>
       </div>
 
-      {/* Opciones de volumen */}
-      <div className="grid grid-cols-3 gap-3">
+      {/* Opciones */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
         {VOLUMEN_OPTIONS.map((v) => {
-          const meta     = VOLUMEN_META[v];
-          const activo   = seleccionado === v;
+          const meta   = VOLUMEN_META[v];
+          const activo = seleccionado === v;
+          const borderColor =
+            activo && meta.color === 'red'
+              ? 'border-red-500'
+              : activo
+              ? 'border-yellow-400'
+              : 'border-[#1f1f1f] hover:border-neutral-600';
+
           return (
             <button
               key={v}
+              type="button"
               onClick={() => setSeleccionado(v)}
-              className={`rounded-xl p-4 text-left border-2 transition-all ${
-                activo
-                  ? meta.color + ' border-opacity-100 ring-2 ring-indigo-500 ring-offset-1'
-                  : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
-              }`}
+              className={`p-4 text-left border transition-colors flex flex-col gap-3 min-h-[100px] bg-[#0a0a0a] ${borderColor}`}
             >
-              <span className="text-2xl block mb-2">{meta.emoji}</span>
-              <span className="font-bold text-sm block">{v}</span>
-              <span className="text-xs text-gray-500 mt-1 block leading-tight">{meta.desc}</span>
+              <BarIndicator bars={meta.bars} color={meta.color} active={activo} />
+              <div>
+                <span className={`font-black text-xs uppercase tracking-wider block ${
+                  activo
+                    ? meta.color === 'red' ? 'text-red-400' : 'text-yellow-400'
+                    : 'text-neutral-300'
+                }`}>
+                  {v}
+                </span>
+                <span className="text-[10px] text-neutral-600 mt-0.5 block leading-snug uppercase tracking-wide">
+                  {meta.desc}
+                </span>
+              </div>
             </button>
           );
         })}
       </div>
 
-      {/* Botón generar */}
+      {/* Botón */}
       <button
+        type="button"
         onClick={handleConfirm}
         disabled={cargando}
-        className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white font-bold py-3.5 px-6 rounded-xl text-base transition"
+        className="w-full bg-yellow-400 hover:bg-yellow-300 disabled:opacity-40 text-[#0a0a0a] font-black py-4 text-[11px] uppercase tracking-[0.18em] transition-colors flex items-center justify-center gap-2"
       >
-        {cargando ? 'Generando rutina…' : '⚡ Generar Mi Rutina Inteligente'}
+        {cargando ? (
+          <>
+            <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+            Generando rutina…
+          </>
+        ) : (
+          'Cargar bloque de entrenamiento'
+        )}
       </button>
     </div>
   );

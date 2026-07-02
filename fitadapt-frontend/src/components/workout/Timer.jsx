@@ -1,4 +1,5 @@
 // src/components/workout/Timer.jsx
+import { useEffect } from 'react';
 import useTimer from '../../hooks/useTimer';
 
 export default function Timer({ minutos, onTick }) {
@@ -12,72 +13,76 @@ export default function Timer({ minutos, onTick }) {
     reiniciar,
   } = useTimer(minutos);
 
-  // Notifica al padre el tiempo transcurrido (para registrarHistorial)
-  // El padre llama handleCompletar y ya tiene el valor por closure
-  // pero también podemos usar un callback por efecto:
-  // useEffect(() => onTick(transcurridos), [transcurridos]);
+  useEffect(() => {
+    if (onTick) onTick(transcurridos);
+  }, [transcurridos, onTick]);
 
   const total     = minutos * 60;
-  const progreso  = 1 - (m * 60 + s) / total;
-  const radio     = 36;
-  const circunf   = 2 * Math.PI * radio;
-  const offset    = circunf * (1 - progreso);
+  const progreso = total > 0 ? 1 - (m * 60 + s) / total : 0;
+  const radio    = 36;
+  const circunf  = 2 * Math.PI * radio;
+  const offset   = circunf * (1 - progreso);
   const terminado = m === 0 && s === 0;
 
   return (
-    <div className="mt-4 flex items-center gap-6">
-      {/* Anillo de progreso SVG */}
-      <div className="relative w-24 h-24 flex items-center justify-center">
-        <svg width="96" height="96" className="-rotate-90">
-          {/* Track */}
+    <div className="mt-5 pt-4 border-t border-neutral-800/60 flex items-center justify-between gap-6">
+      
+      {/* Anillo Circular Técnico */}
+      <div className="relative w-20 h-20 flex items-center justify-center flex-shrink-0">
+        <svg width="80" height="80" className="-rotate-90">
           <circle
-            cx="48" cy="48" r={radio}
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="6"
-            className="text-gray-100 dark:text-gray-700"
+            cx="40" cy="40" r={radio}
+            fill="none" 
+            stroke="currentColor" 
+            strokeWidth="3"
+            className="text-neutral-800"
           />
-          {/* Progreso */}
           <circle
-            cx="48" cy="48" r={radio}
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="6"
-            strokeLinecap="round"
+            cx="40" cy="40" r={radio}
+            fill="none" 
+            stroke="currentColor" 
+            strokeWidth="3"
+            strokeLinecap="square"
             strokeDasharray={circunf}
             strokeDashoffset={offset}
-            className={terminado ? 'text-green-400' : 'text-indigo-500'}
+            className={terminado ? 'text-emerald-500' : 'text-yellow-400'}
             style={{ transition: 'stroke-dashoffset 1s linear' }}
           />
         </svg>
-        <span className="absolute text-sm font-mono font-bold text-gray-700 dark:text-gray-200">
+        <span className="absolute text-sm font-mono font-bold text-neutral-100 tracking-tighter">
           {String(m).padStart(2, '0')}:{String(s).padStart(2, '0')}
         </span>
       </div>
 
-      {/* Controles */}
-      <div className="flex flex-col gap-2">
+      {/* Controles Planos */}
+      <div className="flex flex-col gap-1.5 flex-1 max-w-[160px]">
         {!terminado ? (
           <button
+            type="button"
             onClick={activo ? pausar : iniciar}
-            className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition ${
+            className={`h-8 text-[11px] font-bold uppercase tracking-wider border transition-all duration-150 rounded-none ${
               activo
-                ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
-                : 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200'
+                ? 'bg-neutral-950 text-yellow-400 border-yellow-500/40 hover:bg-neutral-900'
+                : 'bg-neutral-100 text-neutral-950 border-transparent hover:bg-white'
             }`}
           >
-            {activo ? '⏸ Pausar' : '▶ Iniciar'}
+            {activo ? 'Pausar Módulo' : 'Iniciar Reloj'}
           </button>
         ) : (
-          <span className="text-green-600 font-semibold text-sm">✓ Tiempo cumplido</span>
+          <div className="h-8 flex items-center justify-center text-emerald-400 text-[10px] font-black uppercase tracking-wider border border-emerald-900/30 bg-emerald-950/10 rounded-none">
+            Tiempo Límite
+          </div>
         )}
+        
         <button
+          type="button"
           onClick={reiniciar}
-          className="px-4 py-1.5 rounded-lg text-sm text-gray-500 hover:bg-gray-100 transition"
+          className="h-8 bg-transparent text-neutral-500 hover:text-neutral-300 text-[10px] font-bold uppercase tracking-widest border border-transparent hover:border-neutral-800 transition-all duration-150 rounded-none"
         >
-          ↺ Reiniciar
+          Reset
         </button>
       </div>
+
     </div>
   );
 }

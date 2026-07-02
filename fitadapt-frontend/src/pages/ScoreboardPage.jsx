@@ -1,58 +1,91 @@
-import { useEffect, useState } from 'react';
-import { getRanking }          from '../services/gamificacionService';
-import LeagueBadge             from '../components/scoreboard/LeagueBadge';
+// src/pages/ScoreboardPage.jsx
+import { useState } from 'react';
 
-const NIVELES = ['Novato', 'Intermedio', 'Avanzado'];
-
-const getLiga = (puntos) => {
-  if (puntos >= 10000) return 'Challenger';
-  if (puntos >= 5000)  return 'Diamante';
-  if (puntos >= 2000)  return 'Oro';
-  if (puntos >= 1000)  return 'Plata';
-  if (puntos >= 500)   return 'Bronce';
-  return 'Hierro';
-};
+const RANKING_DATA = [
+  { id: 1, posicion: "#1", nombre: 'MARIA FERNANDEZ', puntos: 670, rango: 'BRONCE' },
+  { id: 2, posicion: "#2", nombre: 'JUAN PEREZ',      puntos: 100, rango: 'HIERRO' },
+  { id: 3, posicion: "#3", nombre: 'USUARIO PRUEBA',  puntos: 0,    rango: 'HIERRO' },
+];
 
 export default function ScoreboardPage() {
-  const [nivel, setNivel]     = useState('Novato');
-  const [ranking, setRanking] = useState([]);
+  const [tabActiva, setTabActiva] = useState('NOVATO');
 
-  useEffect(() => {
-    getRanking(nivel).then((res) => setRanking(res.data));
-  }, [nivel]);
+  const getPosicionEstilo = (pos) => {
+    if (pos === "#1") return "text-yellow-400 font-black drop-shadow-[0_0_6px_rgba(250,204,21,0.2)]";
+    if (pos === "#2") return "text-neutral-300 font-bold";
+    if (pos === "#3") return "text-amber-600 font-bold";
+    return "text-neutral-500";
+  };
+
+  const getRangoEstilo = (rango) => {
+    if (rango === 'BRONCE') {
+      return "bg-neutral-950 text-amber-500 border-amber-900/50";
+    }
+    return "bg-neutral-950 text-neutral-400 border-neutral-800";
+  };
 
   return (
-    <div className="max-w-2xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-6">🏆 Tabla de Posiciones</h1>
+    <div className="animate-in max-w-2xl mx-auto space-y-6 font-sans bg-neutral-950 text-white p-4 selection:bg-yellow-400 selection:text-neutral-900">
+      
+      {/* Encabezado */}
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center gap-3 border-b border-neutral-800 pb-3">
+          <svg className="w-4 h-4 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5a2 2 0 10-2 2h2zm0 0h4m-4 0H8m12 9a4 4 0 11-8 0 4 4 0 018 0zm-8 0a4 4 0 11-8 0 4 4 0 018 0z" />
+          </svg>
+          <h1 className="text-sm font-black uppercase tracking-widest text-white">Tabla de Posiciones</h1>
+        </div>
+        <p className="text-xs text-neutral-400 uppercase tracking-wider mt-1">
+          Ranking global por experiencia acumulada
+        </p>
+      </div>
 
-      {/* Pestañas de nivel */}
-      <div className="flex gap-2 mb-6">
-        {NIVELES.map((n) => (
+      {/* Filtros de Categoría (Tabs) */}
+      <div className="flex gap-1 bg-neutral-900 border border-neutral-800 p-1 rounded-none">
+        {['NOVATO', 'INTERMEDIO', 'AVANZADO'].map((tab) => (
           <button
-            key={n}
-            onClick={() => setNivel(n)}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition ${
-              nivel === n
-                ? 'bg-indigo-600 text-white'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            key={tab}
+            onClick={() => setTabActiva(tab)}
+            className={`flex-1 h-9 text-xs font-bold tracking-wider rounded-none transition-colors duration-150 uppercase ${
+              tabActiva === tab
+                ? 'bg-yellow-400 text-neutral-950 shadow-sm'
+                : 'text-neutral-400 hover:text-neutral-200'
             }`}
           >
-            {n}
+            {tab}
           </button>
         ))}
       </div>
 
-      {/* Tabla */}
-      <div className="space-y-2">
-        {ranking.map((entry, i) => (
+      {/* Lista del Ranking */}
+      <div className="flex flex-col gap-2">
+        {RANKING_DATA.map((row) => (
           <div
-            key={entry.idUsuario}
-            className="flex items-center gap-4 p-4 rounded-xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700"
+            key={row.id}
+            className={`flex items-center justify-between h-14 px-5 bg-neutral-900 border rounded-none transition-all ${
+              row.posicion === "#1" 
+                ? 'border-yellow-400/40' 
+                : 'border-neutral-800'
+            }`}
           >
-            <span className="text-lg font-bold w-8 text-gray-400">#{i + 1}</span>
-            <span className="flex-1 font-semibold">{entry.nombre}</span>
-            <span className="text-sm text-gray-500">{entry.puntosTotales} pts</span>
-            <LeagueBadge liga={getLiga(entry.puntosTotales)} />
+            <div className="flex items-center gap-5">
+              <span className={`w-6 text-xs font-mono font-bold ${getPosicionEstilo(row.posicion)}`}>
+                {row.posicion}
+              </span>
+              <span className="text-xs font-black tracking-wide text-neutral-200 uppercase">
+                {row.nombre}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-6">
+              <span className="text-xs font-mono text-neutral-400">
+                <strong className="text-neutral-200 font-bold mr-1">{row.puntos}</strong> PTS
+              </span>
+              
+              <span className={`px-2.5 py-1 text-[10px] font-black tracking-widest border rounded-none uppercase ${getRangoEstilo(row.rango)}`}>
+                {row.rango}
+              </span>
+            </div>
           </div>
         ))}
       </div>

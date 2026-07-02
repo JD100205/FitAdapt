@@ -1,46 +1,71 @@
 // src/components/workout/CompletionModal.jsx
-// Recibe resultado: HistorialResponseDTO { estado, puntosObtenidos, puntosTotalesNuevos }
 import { useGamificacion } from '../../context/GamificacionContext';
 
-const ESTADO_CONFIG = {
-  COMPLETADO:      { emoji: '🎯', label: 'Ejercicio completado',   color: 'text-green-600' },
-  RACHA_ACTIVA:    { emoji: '🔥', label: '¡Racha en curso!',       color: 'text-orange-500' },
-  RACHA_PROTEGIDA: { emoji: '🛡', label: 'Racha protegida',        color: 'text-blue-500'  },
-  RACHA_PERDIDA:   { emoji: '💔', label: 'Racha perdida',          color: 'text-red-500'   },
-};
+// FIX MODAL: El backend devuelve texto libre en resultado.estado
+// ("Completado exitosamente", "Completado con advertencia", etc.)
+// El mapa anterior usaba claves como "COMPLETADO" que nunca coincidían,
+// así que el modal siempre mostraba el fallback y el color nunca variaba.
+// Ahora se detecta el estado por substring para ser robusto ante cambios menores.
+function resolverConfig(estado = '') {
+  const e = estado.toLowerCase();
+  if (e.includes('protegida') || e.includes('protector')) {
+    return { label: 'RACHA PROTEGIDA',   color: 'text-cyan-400'   };
+  }
+  if (e.includes('perdida') || e.includes('perdiste')) {
+    return { label: 'RACHA PERDIDA',     color: 'text-red-400'    };
+  }
+  if (e.includes('advertencia')) {
+    return { label: 'COMPLETADO',        color: 'text-yellow-400' };
+  }
+  if (e.includes('racha') && e.includes('aumentada')) {
+    return { label: 'RACHA AUMENTADA',   color: 'text-orange-400' };
+  }
+  // Default: completado exitosamente
+  return { label: 'EJERCICIO COMPLETADO', color: 'text-emerald-400' };
+}
 
 export default function CompletionModal({ resultado, onClose }) {
   const { racha } = useGamificacion();
-  const cfg = ESTADO_CONFIG[resultado.estado] ?? ESTADO_CONFIG.COMPLETADO;
+  const cfg = resolverConfig(resultado.mensajeRacha || resultado.estado);
 
   return (
-    // Overlay semi-transparente
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl p-8 w-full max-w-sm mx-4 text-center animate-in fade-in zoom-in duration-200">
-        {/* Emoji principal */}
-        <div className="text-6xl mb-4">{cfg.emoji}</div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-neutral-950/80 backdrop-blur-md">
+      <div className="bg-neutral-900 border border-neutral-800 rounded-none p-8 w-full max-w-sm mx-4 text-center">
 
-        {/* Estado */}
-        <h2 className={`text-xl font-bold mb-1 ${cfg.color}`}>{cfg.label}</h2>
-
-        {/* Puntos ganados */}
-        <p className="text-gray-500 text-sm mb-6">
-          Ganaste{' '}
-          <span className="font-bold text-indigo-600">+{resultado.puntosObtenidos} pts</span>
-          {' '}— Total:{' '}
-          <span className="font-semibold">{resultado.puntosTotalesNuevos} pts</span>
-        </p>
-
-        {/* Racha */}
-        <div className="flex items-center justify-center gap-2 bg-orange-50 dark:bg-orange-900/20 rounded-xl py-3 px-4 mb-6">
-          <span className="text-2xl">🔥</span>
-          <span className="font-bold text-orange-600 text-lg">{racha}</span>
-          <span className="text-gray-500 text-sm">días de racha</span>
+        <div className="text-[10px] font-black tracking-widest text-neutral-500 uppercase mb-2">
+          // SISTEMA DE MONITOREO
         </div>
 
+        <h2 className={`text-lg font-black tracking-wide uppercase mb-1 ${cfg.color}`}>
+          {cfg.label}
+        </h2>
+
+        <div className="bg-neutral-950 border border-neutral-800/60 p-4 my-6 text-center">
+          <p className="text-xs text-neutral-400 uppercase tracking-wider mb-1">Puntos Asignados</p>
+          <div className="text-xl font-black text-yellow-400 font-mono">
+            +{resultado.puntosObtenidos ?? 0} PTS
+          </div>
+          <div className="text-[10px] text-neutral-500 uppercase tracking-widest mt-2 border-t border-neutral-800 pt-2">
+            Balance Global: {resultado.puntosTotalesNuevos ?? 0} PTS
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between bg-neutral-950/40 border border-neutral-800/80 px-4 h-11 mb-6 text-xs uppercase tracking-wider">
+          <span className="text-neutral-400 font-medium">Historial Continuo:</span>
+          <span className="font-black text-orange-400 font-mono">{racha} DÍAS</span>
+        </div>
+
+        {/* Mensaje de racha del backend */}
+        {resultado.mensajeRacha && resultado.mensajeRacha !== 'Ejercicio registrado.' && (
+          <p className="text-[10px] text-neutral-500 uppercase tracking-wider mb-4">
+            {resultado.mensajeRacha}
+          </p>
+        )}
+
         <button
+          type="button"
           onClick={onClose}
-          className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl transition"
+          className="w-full h-11 bg-neutral-100 hover:bg-white text-neutral-950 font-black text-xs uppercase tracking-widest rounded-none transition-all duration-150"
         >
           Continuar
         </button>

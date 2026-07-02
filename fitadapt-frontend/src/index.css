@@ -1,14 +1,68 @@
+/* src/index.css */
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;0,14..32,900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-html { scroll-behavior: smooth; }
+@layer base {
+  html, body {
+    font-family: 'Inter', sans-serif;
+    background-color: #0a0a0a;
+    color: #e5e5e5;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
 
-@keyframes fade-in   { from { opacity: 0 } to { opacity: 1 } }
-@keyframes zoom-in   { from { transform: scale(0.95) } to { transform: scale(1) } }
-@keyframes slide-in  { from { transform: translateX(100%) } to { transform: translateX(0) } }
+  ::selection {
+    background-color: #facc15;
+    color: #0a0a0a;
+  }
 
-.animate-in        { animation: fade-in 0.2s ease; }
-.fade-in           { animation: fade-in 0.2s ease; }
-.zoom-in           { animation: zoom-in 0.2s ease; }
-.slide-in-from-right-5 { animation: slide-in 0.2s ease; }
+  /* Scrollbar discreta */
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #0a0a0a;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #2a2a2a;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #3a3a3a;
+  }
+}
+
+@layer utilities {
+  .text-xxs {
+    font-size: 0.65rem;
+    line-height: 1rem;
+  }
+  /* Fondo amarillo tenue sin Tailwind opacity syntax */
+  .bg-yellow-400\/8 {
+    background-color: rgba(250, 204, 21, 0.08);
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Animación de entrada */
+.animate-in {
+  animation: fadeSlideIn 0.2s ease-out forwards;
+}
+
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

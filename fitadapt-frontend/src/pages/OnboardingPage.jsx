@@ -1,14 +1,19 @@
-import { useState }           from 'react';
-import { useNavigate }        from 'react-router-dom';
-import { useAuth }            from '../context/AuthContext';
-import { crearPerfil, registrarLesiones } from '../services/perfilService';
-import StepFisico   from '../components/onboarding/StepFisico';
-import StepLesiones from '../components/onboarding/StepLesiones';
+// src/pages/OnboardingPage.jsx
+import { useState }                               from 'react';
+import { useNavigate }                            from 'react-router-dom';
+import { useAuth }                                from '../context/AuthContext';
+import { useToast }                               from '../context/ToastContext';
+import { crearPerfil, registrarLesiones }         from '../services/perfilService';
+import StepFisico                                 from '../components/onboarding/StepFisico';
+import StepLesiones                               from '../components/onboarding/StepLesiones';
+import FitAdaptLogo                               from '../components/ui/FitAdaptLogo';
 
 export default function OnboardingPage() {
   const { user, login, token } = useAuth();
-  const navigate = useNavigate();
-  const [step, setStep]     = useState(1);
+  const { showToast }          = useToast();
+  const navigate               = useNavigate();
+
+  const [step, setStep]               = useState(1);
   const [datosFisicos, setDatosFisicos] = useState(null);
 
   const handleStep1 = (datos) => {
@@ -17,29 +22,64 @@ export default function OnboardingPage() {
   };
 
   const handleStep2 = async (idsZonasLesionadas) => {
-    await crearPerfil({ idUsuario: user.idUsuario, ...datosFisicos });
-    await registrarLesiones(user.idUsuario, idsZonasLesionadas);
-    login(token, { ...user, hasProfile: true });
-    navigate('/dashboard');
+    try {
+      await crearPerfil({ idUsuario: user.idUsuario, ...datosFisicos });
+      await registrarLesiones(user.idUsuario, idsZonasLesionadas);
+      login(token, { ...user, hasProfile: true });
+      showToast('¡Perfil configurado! Ya puedes entrenar.', 'success');
+      navigate('/dashboard');
+    } catch (err) {
+      // BUG FIX: antes era catch silencioso — ahora se muestra el error.
+      const msg =
+        err.response?.status === 400
+          ? 'Datos inválidos. Revisa los campos e intenta de nuevo.'
+          : 'No se pudo guardar el perfil. Inténtalo de nuevo.';
+      showToast(msg, 'error');
+    }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-white p-6">
-      <div className="w-full max-w-lg bg-white rounded-2xl shadow-lg p-8">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[#0a0a0a] p-6 font-sans selection:bg-yellow-400 selection:text-neutral-900">
+      
+      {/* Logo arriba */}
+      <div className="mb-8">
+        <FitAdaptLogo size="md" />
+      </div>
+
+      <div className="w-full max-w-lg bg-[#111111] border border-[#1f1f1f] p-8 shadow-2xl">
+
+        {/* Header */}
+        <div className="mb-6">
+          <p className="text-[10px] font-semibold text-neutral-600 uppercase tracking-[0.2em]">
+            Paso {step} de 2
+          </p>
+          <h1 className="text-base font-black text-white uppercase tracking-wider mt-0.5">
+            {step === 1 ? 'Parámetros físicos' : 'Zonas de restricción'}
+          </h1>
+        </div>
+
         {/* Barra de progreso */}
-        <div className="flex gap-2 mb-8">
+        <div className="flex gap-1.5 mb-8">
           {[1, 2].map((s) => (
             <div
               key={s}
-              className={`h-1.5 flex-1 rounded-full transition-colors ${
-                s <= step ? 'bg-indigo-600' : 'bg-gray-200'
+              className={`h-0.5 flex-1 transition-colors duration-300 ${
+                s <= step ? 'bg-yellow-400' : 'bg-[#1f1f1f]'
               }`}
             />
           ))}
         </div>
 
-        {step === 1 && <StepFisico onNext={handleStep1} />}
-        {step === 2 && <StepLesiones onBack={() => setStep(1)} onFinish={handleStep2} />}
+        {/* Pasos */}
+        <div className="text-white">
+          {step === 1 && <StepFisico onNext={handleStep1} />}
+          {step === 2 && (
+            <StepLesiones
+              onBack={() => setStep(1)}
+              onFinish={handleStep2}
+            />
+          )}
+        </div>
       </div>
     </div>
   );

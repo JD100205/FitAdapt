@@ -23,6 +23,7 @@ export function ToastProvider({ children }) {
   const showToast = useCallback((mensaje, tipo = 'info', duracion = 4000) => {
     const id = Date.now();
     setToasts((prev) => [...prev, { id, mensaje, tipo }]);
+    
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
     }, duracion);
@@ -61,4 +62,6 @@ export function ToastProvider({ children }) {
   );
 }
 
+// Desactivamos la regla de ESLint para Fast Refresh en este hook específico
+// eslint-disable-next-line react-refresh/only-export-components
 export const useToast = () => useContext(ToastContext);

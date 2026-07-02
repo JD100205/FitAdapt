@@ -1,20 +1,19 @@
 // src/components/onboarding/StepLesiones.jsx
 import { useState } from 'react';
 
-// Los IDs deben coincidir con los registros de zonas del backend
 const ZONAS = [
-  { id: 1,  label: 'Rodilla', emoji: '🦵' },
-  { id: 2,  label: 'Espalda', emoji: '🏋️' },
-  { id: 3,  label: 'Hombro', emoji: '💪' },
-  { id: 4,  label: 'Cuello', emoji: '🫀' },
-  { id: 5,  label: 'Tobillo', emoji: '🦶' },
-  { id: 13, label: 'Codo', emoji: '🦾' },
-  { id: 14, label: 'Muñeca', emoji: '✋' },
-  { id: 15, label: 'Lumbar', emoji: '🔙' },
-  { id: 16, label: 'Cadera', emoji: '🦴' },
-  { id: 17, label: 'Pecho', emoji: '💓' },
-  { id: 18, label: 'Abdomen', emoji: '🫃' },
-  { id: 19, label: 'Gluteos', emoji: '🍑' }
+  { id: 1,  label: 'Rodilla',  grupo: 'Inferior' },
+  { id: 2,  label: 'Espalda',  grupo: 'Core' },
+  { id: 3,  label: 'Hombro',   grupo: 'Superior' },
+  { id: 4,  label: 'Cuello',   grupo: 'Superior' },
+  { id: 5,  label: 'Tobillo',  grupo: 'Inferior' },
+  { id: 13, label: 'Codo',     grupo: 'Superior' },
+  { id: 14, label: 'Muñeca',   grupo: 'Superior' },
+  { id: 15, label: 'Lumbar',   grupo: 'Core' },
+  { id: 16, label: 'Cadera',   grupo: 'Inferior' },
+  { id: 17, label: 'Pecho',    grupo: 'Superior' },
+  { id: 18, label: 'Abdomen',  grupo: 'Core' },
+  { id: 19, label: 'Glúteos',  grupo: 'Inferior' },
 ];
 
 export default function StepLesiones({ onBack, onFinish }) {
@@ -28,67 +27,73 @@ export default function StepLesiones({ onBack, onFinish }) {
 
   const handleFinish = async () => {
     setCargando(true);
-    // Envía array vacío si no hay lesiones — el backend lo acepta
     await onFinish(seleccionadas);
     setCargando(false);
   };
 
   return (
-    <div className="space-y-5">
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-          Zonas con lesiones o molestias
-        </h2>
-        <p className="text-sm text-gray-500 mt-1">
-          Paso 2 de 2 — El sistema evitará ejercicios que afecten estas zonas.
-          Si no tienes ninguna, haz clic en "Finalizar" directamente.
-        </p>
-      </div>
+    <div className="space-y-7">
 
-      <div className="grid grid-cols-2 gap-2">
-        {ZONAS.map(({ id, label, emoji }) => {
+      {/* Descripción */}
+      <p className="text-[11px] text-neutral-500 leading-relaxed">
+        Selecciona las zonas con lesiones activas o sensibles. El sistema adaptará los ejercicios para protegerlas.
+        Si no tienes ninguna, puedes continuar sin seleccionar nada.
+      </p>
+
+      {/* Grid de zonas */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+        {ZONAS.map(({ id, label }) => {
           const activo = seleccionadas.includes(id);
           return (
             <button
               key={id}
               type="button"
               onClick={() => toggle(id)}
-              className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 text-sm text-left transition ${
+              className={`h-10 px-3 flex items-center justify-between border text-[11px] font-semibold uppercase tracking-wider transition-colors ${
                 activo
-                  ? 'border-red-400 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 font-semibold'
-                  : 'border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-gray-300'
+                  ? 'border-red-500/70 bg-red-950/20 text-red-400'
+                  : 'border-[#1f1f1f] bg-[#0a0a0a] text-neutral-500 hover:text-neutral-200 hover:border-neutral-600'
               }`}
             >
-              <span className="text-base">{emoji}</span>
-              <span className="flex-1">{label}</span>
-              {activo && <span className="text-red-500 text-xs font-bold">✓</span>}
+              <span>{label}</span>
+              {activo && (
+                <span className="w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0" />
+              )}
             </button>
           );
         })}
       </div>
 
-      {seleccionadas.length > 0 && (
-        <p className="text-sm text-red-600 dark:text-red-400 font-medium">
-          {seleccionadas.length} zona{seleccionadas.length > 1 ? 's' : ''} marcada{seleccionadas.length > 1 ? 's' : ''}.
-          Tus rutinas serán adaptadas clínicamente.
-        </p>
-      )}
+      {/* Indicador */}
+      <div className="h-5 flex items-center">
+        {seleccionadas.length > 0 ? (
+          <p className="text-[10px] text-red-400/80 uppercase tracking-widest font-semibold flex items-center gap-2">
+            <span className="inline-block w-1 h-1 rounded-full bg-red-500 animate-pulse" />
+            {seleccionadas.length} zona{seleccionadas.length > 1 ? 's' : ''} restringida{seleccionadas.length > 1 ? 's' : ''}
+          </p>
+        ) : (
+          <p className="text-[10px] text-neutral-700 uppercase tracking-widest">
+            Sin restricciones seleccionadas — entrenamiento completo
+          </p>
+        )}
+      </div>
 
-      <div className="flex gap-3 pt-2">
+      {/* Acciones */}
+      <div className="flex gap-2 pt-1">
         <button
           onClick={onBack}
-          className="flex-1 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300
-            font-semibold py-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition"
+          type="button"
+          className="flex-1 h-12 border border-[#1f1f1f] text-neutral-500 hover:text-neutral-200 hover:border-neutral-600 font-bold text-[11px] uppercase tracking-[0.15em] transition-colors"
         >
           ← Atrás
         </button>
         <button
           onClick={handleFinish}
           disabled={cargando}
-          className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60
-            text-white font-bold py-3 rounded-xl transition"
+          type="button"
+          className="flex-[2] h-12 bg-yellow-400 hover:bg-yellow-300 disabled:opacity-40 text-[#0a0a0a] font-black text-[11px] uppercase tracking-[0.15em] transition-colors"
         >
-          {cargando ? 'Guardando…' : 'Finalizar ✓'}
+          {cargando ? 'Guardando perfil…' : 'Finalizar y entrenar'}
         </button>
       </div>
     </div>
